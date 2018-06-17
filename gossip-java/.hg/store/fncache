@@ -1,0 +1,6 @@
+data/.project.i
+data/.classpath.i
+data/src/gossip/Member.java.i
+data/src/gossip/Client.java.i
+data/config/startup_members.i
+data/src/gossip/TimeoutTimer.java.i
