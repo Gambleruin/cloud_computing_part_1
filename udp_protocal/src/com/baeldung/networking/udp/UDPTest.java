@@ -19,7 +19,6 @@ public class UDPTest {
         client = new EchoClient();
     }
 	
-	@Test
 	public void whenCanSendAndReceivePacket_thenCorrect() {
         String echo = client.sendEcho("hello server");
         assertEquals("hello server", echo);
@@ -27,7 +26,7 @@ public class UDPTest {
         assertFalse(echo.equals("hello server"));
     }
 
-	@After
+	@Test
     public void tearDown() {
         stopEchoServer();
         client.close();
@@ -37,10 +36,6 @@ public class UDPTest {
         client.sendEcho("end");
     }
 	
-	//run the demo
-	public static void main(String args[]) {
-		
-	}
 }
 
 

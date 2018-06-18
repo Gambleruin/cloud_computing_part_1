@@ -26,13 +26,18 @@ public class EchoClient {
 		try {
 			buf =msg.getBytes();
 			packet =new DatagramPacket(buf, buf.length, address, 4445);
+			System.out.println("this is client, now sending O.o\n\n");
 			socket.send(packet);
+			String send =new String(packet.getData(), 0, packet.getLength());
+			System.out.println(send);
 			packet =new DatagramPacket(buf, buf.length);
 			socket.receive(packet);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		String received =new String(packet.getData(), 0, packet.getLength());
+		
+		//System.out.println(received);
 		return received;
 	}
 	

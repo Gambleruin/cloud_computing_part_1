@@ -25,9 +25,11 @@ public class EchoServer extends Thread{
     			int port =packet.getPort();
     			packet =new DatagramPacket(buf, buf.length, address, port);
     			String received =new String(packet.getData(), 0, packet.getLength());
+    			System.out.println("this is server received from client.X.O.o\n");
+    			System.out.println(received);
     			if(received.equals("end")) {
     				running =false;
-    				continue;
+    				break;
     			}
     			socket.send(packet);
     			
