@@ -30,9 +30,9 @@ public class Client implements NotificationListener {
 
 	private ArrayList<Member> deadList;
 
-	private int t_gossip; //in ms
+	private int t_gossip; //in 
 
-	public int t_cleanup; //in ms
+	public int t_cleanup; //in 
 
 	private Random random;
 
@@ -70,6 +70,7 @@ public class Client implements NotificationListener {
 
 		String myIpAddress = InetAddress.getLocalHost().getHostAddress();
 		this.myAddress = myIpAddress + ":" + port;
+		System.out.println(myIpAddress);
 
 		ArrayList<String> startupHostsList = parseStartupMembers();
 
@@ -379,7 +380,9 @@ public class Client implements NotificationListener {
 		}
 	}
 
-	public static void main(String[] args) throws InterruptedException, SocketException, UnknownHostException {
+
+	
+public static void main(String[] args) throws InterruptedException, SocketException, UnknownHostException {
 
 		Client client = new Client();
 		client.start();
