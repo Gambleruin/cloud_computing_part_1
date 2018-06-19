@@ -167,6 +167,7 @@ public class Client implements NotificationListener {
 					//simulate some packet loss ~25%
 					int percentToSend = random.nextInt(100);
 					if(percentToSend > 25) {
+						System.out.println("was I ever being here???");
 						DatagramSocket socket = new DatagramSocket();
 						DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length, dest, port);
 						socket.send(datagramPacket);
@@ -266,6 +267,8 @@ public class Client implements NotificationListener {
 					byte[] buf = new byte[256];
 					DatagramPacket p = new DatagramPacket(buf, buf.length);
 					server.receive(p);
+					System.out.println("holalalalalalalalala: ");
+					System.out.println(p);
 
 					// extract the member arraylist out of the packet
 					// TODO: maybe abstract this out to pass just the bytes needed
