@@ -70,7 +70,7 @@ public class Client implements NotificationListener {
 
 		String myIpAddress = InetAddress.getLocalHost().getHostAddress();
 		this.myAddress = myIpAddress + ":" + port;
-		System.out.println(myIpAddress);
+		//System.out.println(myIpAddress);
 
 		ArrayList<String> startupHostsList = parseStartupMembers();
 
@@ -84,21 +84,24 @@ public class Client implements NotificationListener {
 				me = member;
 				port = Integer.parseInt(host.split(":")[1]);
 				this.myAddress = myIpAddress + ":" + port;
-				System.out.println("I am " + me);
+				//System.out.println("I am " + me);
 			}
 			memberList.add(member);
 		}
 
-		System.out.println("Original Member List");
-		System.out.println("---------------------");
+		//System.out.println("Original Member List");
+		//System.out.println("---------------------");
+		/*
 		for (Member member : memberList) {
 			System.out.println(member);
 		}
-
+		*/
 		if(port != 0) {
 			// TODO: starting the server could probably be moved to the constructor
 			// of the receiver thread.
 			server = new DatagramSocket(port);
+			System.out.println("what are other threads gonna be listening to? ");
+			System.out.println(port);
 		}
 		else {
 			// This is bad, so no need proceeding on
@@ -139,7 +142,7 @@ public class Client implements NotificationListener {
 	private void sendMembershipList() {
 
 		this.me.setHeartbeat(me.getHeartbeat() + 1);
-
+		System.out.println(this.me+"and I never change?");
 		synchronized (this.memberList) {
 			try {
 				Member member = getRandomMember();
@@ -159,10 +162,12 @@ public class Client implements NotificationListener {
 
 					System.out.println("Sending to " + dest);
 					System.out.println("---------------------");
+					/*
 					for (Member m : memberList) {
 						System.out.println(m);
 					}
 					System.out.println("---------------------");
+					*/
 					
 					//simulate some packet loss ~25%
 					int percentToSend = random.nextInt(100);
@@ -253,15 +258,20 @@ public class Client implements NotificationListener {
 	private class AsychronousReceiver implements Runnable {
 
 		private AtomicBoolean keepRunning;
+		
 
 		public AsychronousReceiver() {
 			keepRunning = new AtomicBoolean(true);
 		}
 
+		
 		@SuppressWarnings("unchecked")
 		@Override
+		
 		public void run() {
-			while(keepRunning.get()) {
+			System.out.println("holalalalalalalalala: ");
+			//while(keepRunning.get()) {
+			while(true) {
 				try {
 					//XXX: be mindful of this array size for later
 					byte[] buf = new byte[256];
@@ -285,6 +295,7 @@ public class Client implements NotificationListener {
 						}
 						// Merge our list with the one we just received
 						mergeLists(list);
+						
 					}
 
 				} catch (IOException e) {
@@ -372,7 +383,7 @@ public class Client implements NotificationListener {
 		executor.execute(new AsychronousReceiver());
 		//  The gossiper thread is an active player that 
 		//  selects a neighbor to share its membership list
-		executor.execute(new MembershipGossiper());
+		//executor.execute(new MembershipGossiper());
 
 		// Potentially, you could kick off more threads here
 		//  that could perform additional data synching

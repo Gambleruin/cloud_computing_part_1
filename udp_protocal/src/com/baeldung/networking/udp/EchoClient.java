@@ -31,7 +31,7 @@ public class EchoClient {
 			String send =new String(packet.getData(), 0, packet.getLength());
 			System.out.println(send);
 			packet =new DatagramPacket(buf, buf.length);
-			socket.receive(packet);
+			//socket.receive(packet);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
