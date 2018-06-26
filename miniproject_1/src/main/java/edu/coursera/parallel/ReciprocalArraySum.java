@@ -126,6 +126,10 @@ public final class ReciprocalArraySum {
         @Override
         protected void compute() {
             // TODO
+        	value =0;
+        	for (int i =startIndexInclusive; i < endIndexExclusive; i++) {
+        		value += 1/input[i];
+        	}
         }
     }
 
