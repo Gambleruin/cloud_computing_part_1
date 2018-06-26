@@ -144,7 +144,9 @@ public final class ReciprocalArraySum {
      */
     protected static double parArraySum(final double[] input) {
         assert input.length % 2 == 0;
+        int mid = input.length / 2;
 
+       /*
         double sum = 0;
 
         // Compute sum of reciprocals of array elements
@@ -153,6 +155,13 @@ public final class ReciprocalArraySum {
         }
 
         return sum;
+        */
+        ReciprocalArraySumTask lower = new ReciprocalArraySumTask(0, mid, input);
+        ReciprocalArraySumTask high = new ReciprocalArraySumTask(mid, input.length, input);
+        lower.fork();
+        high.compute();
+        lower.join();
+        return lower.getValue()+high.getValue();
     }
 
     /**
@@ -167,13 +176,40 @@ public final class ReciprocalArraySum {
      */
     protected static double parManyTaskArraySum(final double[] input,
             final int numTasks) {
-        double sum = 0;
-
-        // Compute sum of reciprocals of array elements
-        for (int i = 0; i < input.length; i++) {
-            sum += 1 / input[i];
+    	int taskNum =numTasks;
+    	if(taskNum>input.length){
+            taskNum = input.length;
         }
-
+    	
+    	ReciprocalArraySumTask[] tasks = new ReciprocalArraySumTask[taskNum];
+    	
+    	for(int i=0; i<taskNum-1; i++){
+            tasks[i] = new ReciprocalArraySumTask(getChunkStartInclusive(i, taskNum, input.length), getChunkEndExclusive(i, taskNum, input.length), input);
+            tasks[i].fork();
+            tasks[i].compute();
+        }
+    	
+    	for(int j=0; j<taskNum-1; j++){
+            tasks[j].join();
+        }
+    	double sum = 0;
+        for(int j=0; j<taskNum; j++){
+            sum += tasks[j].getValue();
+        }
         return sum;
+    	
+
+    }
+    
+    public static void main(String[] args){
+        double[] arr = {2,4,8,10};
+  
+        double seq = seqArraySum(arr);
+        double half = parArraySum(arr);
+        double many = parManyTaskArraySum(arr, 4);
+  
+        System.out.println(seq);
+        System.out.println(half);
+        System.out.println(many);
     }
 }
