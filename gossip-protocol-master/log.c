@@ -17,7 +17,7 @@ void print_info(char *str){
 	int l, i;
 	l = strlen(str);
 
-	printf("forward is \n");
+	printf("forward to \n");
   	for (i = 0; i < l; ++i) 
     	printf("%c",str[i]);
 
@@ -57,7 +57,6 @@ void LOG(address *addr, char * str, ...){
 	else 
 
 	sprintf(stdstring, "%d.%d.%d.%d:%d ", addr->addr[0], addr->addr[1], addr->addr[2], addr->addr[3], *(short *)&addr->addr[4]);
-	//print_info(str);
 	va_start(vararglist, str);
 	vsprintf(buffer, str, vararglist);
 	va_end(vararglist);
@@ -89,7 +88,7 @@ void logNodeAdd(address *thisNode, address *addedAddr)
 	static char stdstring[30];
 	sprintf(stdstring, "Node %d.%d.%d.%d:%d joined", addedAddr->addr[0], addedAddr->addr[1], addedAddr->addr[2], addedAddr->addr[3], *(short *)&addedAddr->addr[4]);
 	//print_info(stdstring);
-    LOG(thisNode, stdstring);
+    //LOG(thisNode, stdstring);
 }
 
 void logNodeRemove(address *thisNode, address *removedAddr)
@@ -97,5 +96,5 @@ void logNodeRemove(address *thisNode, address *removedAddr)
 	static char stdstring[30];
 	sprintf(stdstring, "Node %d.%d.%d.%d:%d removed", removedAddr->addr[0], removedAddr->addr[1], removedAddr->addr[2], removedAddr->addr[3], *(short *)&removedAddr->addr[4]);
 	//print_info(stdstring);
-    LOG(thisNode, stdstring);
+    //LOG(thisNode, stdstring);
 }

@@ -48,7 +48,7 @@ int main(int argc, char *argv[]){
 	 group[i].inited=0;
 
  
- for(globaltime=0; globaltime<500; ++globaltime) {
+ for(globaltime=0; globaltime<10; ++globaltime) {
 	 
 	 /* call recvloop for all nodes currently in the system */
 	 for(i=0;i<=EN_GPSZ-1;i++)
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
 		 if(getcurrtime() == (int)(STEP_RATE*i)) {
 			 /* introduce the ith node into the system at time STEPRATE*i */
 			 nodestart(&group[i], JOINADDR, PORTNUM); /* last two params not used here */
-		 	printf("%d-th introduced node is assigned with the address: ", i);
+		 	//printf("%d-th introduced node is assigned with the address: ", i);
 		 }
 		 else if(getcurrtime()>(int)(STEP_RATE*i) && group[i].bfailed==0) {
 			nodeloop(&group[i]);

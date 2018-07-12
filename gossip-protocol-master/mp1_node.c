@@ -93,7 +93,7 @@ static void sendGossip(member* self){
     else{
         char debug_buffer[50];
         print_address(debug_buffer,&self->memberList[randnode].addr);
-        LOG(&self->addr,"Sending a GOSSIP message to %s",debug_buffer);
+        //LOG(&self->addr,"Sending a GOSSIP message to %s",debug_buffer);
         address* send_addr = &self->memberList[randnode].addr;
         size_t messagesize = sizeof(messagehdr) + sizeof(address) + sizeof(int) + sizeof(MemberEntry)*self->numMemberEntries;
         char* msg = malloc(messagesize);
@@ -184,14 +184,14 @@ static void updateNodeTable(member* self, address* other_addr,char* data,int dat
                         self->memberList[i].last_hb = otherList[j].last_hb;
                         self->memberList[i].last_local_timestamp = getcurrtime();   
                         print_address(debug_buffer,&self->memberList[i].addr);
-                        LOG(&self->addr,"\t\tUpdated the entry for %s with hb_new %d vs %d hb_old",debug_buffer,self->memberList[i].last_hb,oldhb);        
+                        //LOG(&self->addr,"\t\tUpdated the entry for %s with hb_new %d vs %d hb_old",debug_buffer,self->memberList[i].last_hb,oldhb);        
                     }else{
                         int64_t oldhb=self->memberList[i].last_hb;
                         self->memberList[i].last_hb = otherList[j].last_hb;
                         self->memberList[i].last_local_timestamp = getcurrtime();   
                         self->memberList[i].mark_fail=0; //reverse your decision as you got a greater hb
                         print_address(debug_buffer,&self->memberList[i].addr);
-                        LOG(&self->addr,"\t\tReviving the node at %s with hb_new %d vs  %d hb_old",debug_buffer,self->memberList[i].last_hb,oldhb);
+                        //LOG(&self->addr,"\t\tReviving the node at %s with hb_new %d vs  %d hb_old",debug_buffer,self->memberList[i].last_hb,oldhb);
                     }
                 }
             }
@@ -203,7 +203,7 @@ static void updateNodeTable(member* self, address* other_addr,char* data,int dat
                 self->memberList[self->numMemberEntries] = otherList[j];
                 self->memberList[self->numMemberEntries].last_local_timestamp = getcurrtime(); //stamp it with a local timestamp
                 print_address(debug_buffer,&self->memberList[self->numMemberEntries].addr);
-                LOG(&self->addr,"\t\tAdded the entry for %s with hb %d",debug_buffer,self->memberList[self->numMemberEntries].last_hb);        
+                //LOG(&self->addr,"\t\tAdded the entry for %s with hb %d",debug_buffer,self->memberList[self->numMemberEntries].last_hb);        
                 self->numMemberEntries++;
 #ifdef DEBUGLOG
                 logNodeAdd(&self->addr,&otherList[j].addr); 
@@ -260,7 +260,7 @@ void Process_joinreq(void *env, char *data, int size)
     size -= sizeof(address);
     print_address(addr_str,req_addr);
 
-    LOG(&self->addr,"Recieved a JOINREQ from %s",addr_str);
+    //LOG(&self->addr,"Recieved a JOINREQ from %s",addr_str);
 
 
     /* data now corresponds to the actual content of the message */
@@ -303,7 +303,7 @@ void Process_joinrep(void *env, char *data, int size)
     size -= sizeof(address);
     print_address(addr_str,resp_addr);
 
-    LOG(&self->addr,"Received a JOINREP from %s",addr_str);
+    //LOG(&self->addr,"Received a JOINREP from %s",addr_str);
 
     /* I can join the group now */
     self->ingroup = 1;
@@ -337,7 +337,7 @@ void Process_gossip(void* env,char* data,int size){
     size -= sizeof(address);
     print_address(addr_str,resp_addr);
     
-    LOG(&self->addr,"Received a GOSSIP message from %s",addr_str);
+    //LOG(&self->addr,"Received a GOSSIP message from %s",addr_str);
 
     /* data now points to the actual message contents */
     if(size>0) updateNodeTable(self,resp_addr,data,size);
@@ -378,7 +378,7 @@ int recv_callback(void *env, char *data, int size){
     }
 
 #ifdef DEBUGLOG
-    LOG(&((member *)env)->addr, "Received msg type %d with %d B payload", msghdr->msgtype, size - sizeof(messagehdr));
+    //LOG(&((member *)env)->addr, "Received msg type %d with %d B payload", msghdr->msgtype, size - sizeof(messagehdr));
 #endif
 
     if((node->ingroup && msghdr->msgtype >= 0 && msghdr->msgtype <= DUMMYLASTMSGTYPE)

@@ -118,7 +118,6 @@ int ENrecv(struct address *myaddr, int (* enq)(void *, char *, int), struct time
 			recv_msgs[dst][time]++;
 		}
 	}
-
 	return 0;
 }
 
@@ -153,6 +152,7 @@ int ENcleanup(){
 			}
 		}
 		fprintf(file, "\n");
+
 		fprintf(file, "node %3d sent_total %6u  recv_total %6u\n\n", i, sent_total, recv_total);
 	}
 
