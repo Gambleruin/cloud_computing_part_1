@@ -2,7 +2,7 @@
 *
 * Progam Name: MP1. Membership Protocol.
 * 
-* Code authors: <your name here>
+* Code authors: <daniel hao>
 *
 * Current file: mp2_node.h
 * About this file: Header file.
@@ -29,7 +29,7 @@ extern short PORTNUM;                /* standard portnum of server to contact. *
 typedef struct MemberEntry{
     struct address addr;                // the address of the node
     int last_local_timestamp;           // the local timestamp for the last update
-    int64_t last_hb;                        // the heartbeat on the last update
+    int64_t last_hb;                    // the heartbeat on the last update
     int mark_fail;                      // whether the node has been marked for fail
     int mark_del;                       //whether the node has been marked for deletion
 } MemberEntry;
@@ -43,7 +43,6 @@ typedef struct member{
         int ingroup;                    // boolean indiciating if this member is in the group
 
         queue inmsgq;                   // queue for incoming messages
-
         int bfailed;                    // boolean indicating if this member has failed
         
         /* Fields specific to the membership table that is maintatined at this node */

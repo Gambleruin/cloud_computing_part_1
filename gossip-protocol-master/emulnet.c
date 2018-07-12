@@ -122,7 +122,7 @@ int ENrecv(struct address *myaddr, int (* enq)(void *, char *, int), struct time
 }
 
 /* 
-Cleanup the EmulNet. Called exactly once at the end of the program. 
+	Cleanup the EmulNet. Called exactly once at the end of the program. 
 */
 int ENcleanup(){
 	emulnet.nextid=0;
@@ -135,7 +135,6 @@ int ENcleanup(){
 		free(emulnet.buff[--emulnet.currbuffsize]);
 
 	for (i = 1; i <= EN_GPSZ; i++) {
-
 		fprintf(file, "node %3d ", i);
 		sent_total = 0;
 		recv_total = 0;

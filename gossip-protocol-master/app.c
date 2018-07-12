@@ -43,7 +43,6 @@ int main(int argc, char *argv[]){
  Periodically call nodeloop() on each of them (once per time unit)
  Finally call finishup_thisnode() on each one of them
  */
-
  for(i=0;i<=EN_GPSZ-1;i++)
 	 group[i].inited=0;
 

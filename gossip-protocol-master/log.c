@@ -25,7 +25,7 @@ void print_info(char *str){
 }	
 
 /*
-Print out to file dbg.log, along with address of node.
+	Print out to file dbg.log, along with address of node.
 */
 void LOG(address *addr, char * str, ...){
 
@@ -55,8 +55,8 @@ void LOG(address *addr, char * str, ...){
 		dbg_opened=639;
 	}
 	else 
+		sprintf(stdstring, "%d.%d.%d.%d:%d ", addr->addr[0], addr->addr[1], addr->addr[2], addr->addr[3], *(short *)&addr->addr[4]);
 
-	sprintf(stdstring, "%d.%d.%d.%d:%d ", addr->addr[0], addr->addr[1], addr->addr[2], addr->addr[3], *(short *)&addr->addr[4]);
 	va_start(vararglist, str);
 	vsprintf(buffer, str, vararglist);
 	va_end(vararglist);
@@ -88,7 +88,7 @@ void logNodeAdd(address *thisNode, address *addedAddr)
 	static char stdstring[30];
 	sprintf(stdstring, "Node %d.%d.%d.%d:%d joined", addedAddr->addr[0], addedAddr->addr[1], addedAddr->addr[2], addedAddr->addr[3], *(short *)&addedAddr->addr[4]);
 	//print_info(stdstring);
-    //LOG(thisNode, stdstring);
+    LOG(thisNode, stdstring);
 }
 
 void logNodeRemove(address *thisNode, address *removedAddr)

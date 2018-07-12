@@ -61,35 +61,37 @@ address getjoinaddr(void){
  *
  */
 
-
 /* returns string representation of an address */
 static void print_address(char* address_buf,address* addrs){
     char* addr = (char*)addrs;
 	sprintf(address_buf, "%d.%d.%d.%d:%d ", addr[0], addr[1], addr[2], addr[3], *(short *)&addr[4]);
+    //LOG(addrs,"\t\tThe address is being printed: %s ",address_buf);
 }
 
 /* This function copies a serialized repn of the memberlist into the 
    buffer pointed to by buffer*/
 static void serializeMemberTable(member* self, char* buffer){
-
     memcpy(buffer,&self->numMemberEntries,sizeof(int)); 
-    memcpy(buffer+sizeof(int),self->memberList,sizeof(MemberEntry)*self->numMemberEntries); 
-    
+    memcpy(buffer+sizeof(int),self->memberList,sizeof(MemberEntry)*self->numMemberEntries);     
 }
 
 /* This function picks a random node and sends it a gossip */
 static void sendGossip(member* self){
-    
-    if(self->numMemberEntries==1) return; /*without gossiping */
+    if(self->numMemberEntries==1) 
+        return; 
+        /*without gossiping */
     
     int maxtries = 3;
     int randnode;
     while(maxtries--){
         randnode = 1+rand()%(self->numMemberEntries-1);
-        if(self->memberList[randnode].mark_fail==1) continue;
+        if(self->memberList[randnode].mark_fail==1) 
+            continue;
         else break;
     }
-    if(self->memberList[randnode].mark_fail==1) return /*without gossiping*/;
+    if(self->memberList[randnode].mark_fail==1) 
+        /*without gossiping*/
+        return; 
     else{
         char debug_buffer[50];
         print_address(debug_buffer,&self->memberList[randnode].addr);
@@ -103,7 +105,6 @@ static void sendGossip(member* self){
         MPp2psend(&self->addr,send_addr, (char *)msg, messagesize);
         free(msg);
     }
-
 }
 
 /* This function updates your own hearbeat counter */
@@ -139,19 +140,19 @@ static void checkNodeTable(member* self){
                 int64_t oldts = self->memberList[i].last_local_timestamp;
                 logNodeRemove(&self->addr,&self->memberList[i].addr); 
                 print_address(debug_buffer,&self->memberList[i].addr);
+
                 LOG(&self->addr,"\t\tMarking node %s as Deleted on %d , entry last updated at %d",debug_buffer,getcurrtime(),oldts);
                 self->memberList[i] = self->memberList[self->numMemberEntries-1];
                 self->numMemberEntries--;
             }
-
         }
     }
-
 }
 
-
-/*Takes in a serialized repn of the member list coming from node n and 
- parses it to update your own table, also update the entry of the resp_addr */
+/*
+    Takes in a serialized repn of the member list coming from node n and 
+    parses it to update your own table, also update the entry of the resp_addr
+*/
 static void updateNodeTable(member* self, address* other_addr,char* data,int datasize){
     
     char debug_buffer[100];
@@ -161,13 +162,15 @@ static void updateNodeTable(member* self, address* other_addr,char* data,int dat
         LOG(&self->addr,"Bad Packet");
         return ;
     }
+
     /*iterate over their list */
     MemberEntry* otherList = (MemberEntry*)(otherListSize+1);
     for(j=0;j<*otherListSize;++j){
         int updateMade = 0;
         
         /* ignore this entry if this entry is not reliable */
-        if(otherList[j].mark_fail) continue;
+        if(otherList[j].mark_fail) 
+            continue;
 
         /* iterate over my list */
         for(i=1;i<self->numMemberEntries;++i){
@@ -183,15 +186,17 @@ static void updateNodeTable(member* self, address* other_addr,char* data,int dat
                         int64_t oldhb=self->memberList[i].last_hb;
                         self->memberList[i].last_hb = otherList[j].last_hb;
                         self->memberList[i].last_local_timestamp = getcurrtime();   
-                        print_address(debug_buffer,&self->memberList[i].addr);
-                        //LOG(&self->addr,"\t\tUpdated the entry for %s with hb_new %d vs %d hb_old",debug_buffer,self->memberList[i].last_hb,oldhb);        
+                        print_address(debug_buffer, &self->memberList[i].addr);
+
+                        //LOG(&self->addr,"\t\tUpdated the entry for %s with hb_new %d vs %d hb_old\n",debug_buffer,self->memberList[i].last_hb,oldhb);        
                     }else{
                         int64_t oldhb=self->memberList[i].last_hb;
                         self->memberList[i].last_hb = otherList[j].last_hb;
                         self->memberList[i].last_local_timestamp = getcurrtime();   
                         self->memberList[i].mark_fail=0; //reverse your decision as you got a greater hb
-                        print_address(debug_buffer,&self->memberList[i].addr);
-                        //LOG(&self->addr,"\t\tReviving the node at %s with hb_new %d vs  %d hb_old",debug_buffer,self->memberList[i].last_hb,oldhb);
+                        printf("reverse your decision as you got a greater hb");
+                        print_address(debug_buffer, &self->memberList[i].addr);
+                        //LOG(&self->addr,"\t\tReviving the node at %s with hb_new %d vs  %d hb_old\n",debug_buffer,self->memberList[i].last_hb,oldhb);
                     }
                 }
             }
@@ -260,7 +265,7 @@ void Process_joinreq(void *env, char *data, int size)
     size -= sizeof(address);
     print_address(addr_str,req_addr);
 
-    //LOG(&self->addr,"Recieved a JOINREQ from %s",addr_str);
+    LOG(&self->addr,"Recieved a JOINREQ from %s",addr_str);
 
 
     /* data now corresponds to the actual content of the message */
@@ -303,7 +308,7 @@ void Process_joinrep(void *env, char *data, int size)
     size -= sizeof(address);
     print_address(addr_str,resp_addr);
 
-    //LOG(&self->addr,"Received a JOINREP from %s",addr_str);
+    LOG(&self->addr,"Received a JOINREP from %s",addr_str);
 
     /* I can join the group now */
     self->ingroup = 1;
@@ -337,10 +342,11 @@ void Process_gossip(void* env,char* data,int size){
     size -= sizeof(address);
     print_address(addr_str,resp_addr);
     
-    //LOG(&self->addr,"Received a GOSSIP message from %s",addr_str);
+    LOG(&self->addr,"Received a GOSSIP message from %s",addr_str);
 
     /* data now points to the actual message contents */
-    if(size>0) updateNodeTable(self,resp_addr,data,size);
+    if(size>0) 
+        updateNodeTable(self,resp_addr,data,size);
     else{
         LOG(&self->addr,"Join response is empty!");
     }
@@ -353,7 +359,7 @@ void Process_gossip(void* env,char* data,int size){
 Array of Message handlers. 
 */
 void ( ( * MsgHandler [20] ) STDCLLBKARGS )={
-/* Message processing operations at the P2P layer. */
+    /* Message processing operations at the P2P layer. */
     Process_joinreq, 
     Process_joinrep,
     Process_gossip
@@ -365,7 +371,6 @@ Parse the packet, extract information and process.
 env is member *node, data is 'messagehdr'. 
 */
 int recv_callback(void *env, char *data, int size){
-
     member *node = (member *) env;
     messagehdr *msghdr = (messagehdr *)data;
     char *pktdata = (char *)(msghdr+1);
@@ -383,7 +388,7 @@ int recv_callback(void *env, char *data, int size){
 
     if((node->ingroup && msghdr->msgtype >= 0 && msghdr->msgtype <= DUMMYLASTMSGTYPE)
         || (!node->ingroup && msghdr->msgtype==JOINREP))            
-            /* if not yet in group, accept only JOINREPs */
+        /* if not yet in group, accept only JOINREPs */
         MsgHandler[msghdr->msgtype](env, pktdata, size-sizeof(messagehdr));
     /* else ignore (garbled message) */
     free(data);
@@ -428,7 +433,6 @@ int init_thisnode(member *thisnode, address *joinaddr){
 
 
     /* node is up! */
-
     return 0;
 }
 
@@ -494,20 +498,18 @@ int introduceselftogroup(member *node, address *joinaddr){
         
         free(msg);
     }
-
     return 1;
 
 }
 
 /* 
-Called from nodeloop(). 
+    Called from nodeloop(). 
 */
 void checkmsgs(member *node){
     void *data;
     int size;
 
-    /* Dequeue waiting messages from node->inmsgq and process them. */
-	
+    /* Dequeue waiting messages from node->inmsgq and process them. */	
     while((data = dequeue(&node->inmsgq, &size)) != NULL) {
         recv_callback((void *)node, data, size); 
     }
@@ -536,7 +538,7 @@ void nodeloopops(member *node){
 }
 
 /* 
-Executed periodically at each member. Called from app.c.
+    Executed periodically at each member. Called from app.c.
 */
 void nodeloop(member *node){
     if (node->bfailed) return;
@@ -553,7 +555,7 @@ void nodeloop(member *node){
 }
 
 /* 
-All initialization routines for a member. Called by app.c. 
+    All initialization routines for a member. Called by app.c. 
 */
 void nodestart(member *node, char *servaddrstr, short servport){
 
