@@ -152,7 +152,6 @@ int ENcleanup(){
 			}
 		}
 		fprintf(file, "\n");
-
 		fprintf(file, "node %3d sent_total %6u  recv_total %6u\n\n", i, sent_total, recv_total);
 	}
 

@@ -48,7 +48,7 @@ int main(int argc, char *argv[]){
 	 group[i].inited=0;
 
  
- for(globaltime=0; globaltime<10; ++globaltime) {
+ for(globaltime=0; globaltime<500; ++globaltime) {
 	 
 	 /* call recvloop for all nodes currently in the system */
 	 for(i=0;i<=EN_GPSZ-1;i++)

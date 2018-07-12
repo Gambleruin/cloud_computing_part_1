@@ -1,40 +1,40 @@
-node   1  (   0,    0) (   4,    3) (   5,    4) (   3,    3) (   1,    2) (   1,    2) (   1,    1) (   1,    1) (   1,    1) (   1,    1)
+node   1  (   0,    0) (   4,    3) (   5,    4) (   3,    3) (   1,    1) (   1,    4) (   1,    0) (   1,    0) (   1,    2) (   1,    0)
          
-node   1 sent_total     18  recv_total     18
+node   1 sent_total     18  recv_total     17
 
-node   2  (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    1) (   1,    0) (   1,    2) (   1,    1) (   1,    1) (   1,    1)
+node   2  (   1,    0) (   0,    0) (   1,    2) (   1,    0) (   1,    2) (   1,    0) (   1,    0) (   1,    1) (   1,    1) (   1,    1)
          
-node   2 sent_total      9  recv_total      8
+node   2 sent_total      9  recv_total      7
 
-node   3  (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    2) (   1,    4) (   1,    2) (   1,    4) (   1,    1) (   1,    1)
+node   3  (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    0) (   1,    0) (   1,    2) (   1,    2) (   1,    0) (   1,    2)
          
-node   3 sent_total      9  recv_total     16
+node   3 sent_total      9  recv_total      8
 
-node   4  (   1,    0) (   0,    0) (   1,    2) (   1,    1) (   1,    1) (   1,    0) (   1,    1) (   1,    2) (   1,    1) (   1,    1)
+node   4  (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    1) (   1,    3) (   1,    3) (   1,    1) (   1,    1) (   1,    1)
          
-node   4 sent_total      9  recv_total      9
+node   4 sent_total      9  recv_total     12
 
-node   5  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    1) (   1,    0) (   1,    1) (   1,    1) (   1,    1)
+node   5  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    1) (   1,    1) (   1,    1) (   1,    0) (   1,    2)
          
-node   5 sent_total      8  recv_total      6
+node   5 sent_total      8  recv_total      7
 
-node   6  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    0) (   1,    0) (   1,    1) (   1,    1) (   1,    3) (   1,    2)
+node   6  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    0) (   1,    0) (   1,    2) (   1,    1) (   1,    1) (   1,    1)
          
-node   6 sent_total      8  recv_total      8
+node   6 sent_total      8  recv_total      6
 
-node   7  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    0) (   1,    1) (   1,    0) (   1,    0) (   1,    1) (   1,    1)
+node   7  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    0) (   1,    1) (   1,    1) (   1,    2) (   1,    0) (   1,    0)
          
-node   7 sent_total      8  recv_total      4
+node   7 sent_total      8  recv_total      5
 
-node   8  (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    1) (   1,    2) (   1,    0) (   1,    1) (   1,    0)
+node   8  (   0,    0) (   1,    0) (   0,    0) (   1,    2) (   1,    2) (   1,    1) (   1,    1) (   1,    1) (   1,    1) (   1,    1)
          
-node   8 sent_total      8  recv_total      6
+node   8 sent_total      8  recv_total      9
 
-node   9  (   0,    0) (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    0) (   1,    0) (   1,    0) (   1,    0) (   1,    2)
+node   9  (   0,    0) (   0,    0) (   1,    0) (   0,    0) (   1,    2) (   1,    0) (   1,    0) (   1,    1) (   1,    1) (   1,    2)
          
-node   9 sent_total      7  recv_total      3
+node   9 sent_total      7  recv_total      6
 
-node  10  (   0,    0) (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    1) (   1,    1) (   1,    0) (   1,    0) (   1,    0)
+node  10  (   0,    0) (   0,    0) (   1,    0) (   0,    0) (   1,    1) (   1,    0) (   1,    0) (   1,    0) (   1,    3) (   1,    0)
          
-node  10 sent_total      7  recv_total      3
+node  10 sent_total      7  recv_total      4
 
