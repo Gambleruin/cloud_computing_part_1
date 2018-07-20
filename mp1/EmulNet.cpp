@@ -27,7 +27,7 @@ EmulNet::EmulNet(Params *p)
 }
 
 /**
- * Copy constructor
+ *  Copy constructor
  */
 EmulNet::EmulNet(EmulNet &anotherEmulNet) {
 	int i, j;
@@ -43,7 +43,7 @@ EmulNet::EmulNet(EmulNet &anotherEmulNet) {
 }
 
 /**
- * Assignment operator overloading
+ *  Assignment operator overloading
  */
 EmulNet& EmulNet::operator =(EmulNet &anotherEmulNet) {
 	int i, j;
@@ -159,6 +159,7 @@ int EmulNet::ENrecv(Address *myaddr, int (* enq)(void *, char *, int), struct ti
 			emulnet.buff[i] = emulnet.buff[emulnet.currbuffsize-1];
 			emulnet.currbuffsize--;
 
+			//function pointer
 			(*enq)(queue, (char *)tmp, sz);
 
 			free(emsg);
