@@ -61,10 +61,15 @@ public:
  */
 class MemberListEntry {
 public:
+
 	int id;
 	short port;
 	long heartbeat;
 	long timestamp;
+
+	int mark_fail;                      // whether the node has been marked for fail
+    int mark_del;                       //whether the node has been marked for deletion
+
 	MemberListEntry(int id, short port, long heartbeat, long timestamp);
 	MemberListEntry(int id, short port);
 	MemberListEntry(): id(0), port(0), heartbeat(0), timestamp(0) {}

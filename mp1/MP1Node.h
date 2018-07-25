@@ -32,6 +32,7 @@ enum MsgTypes{
     JOINREQ,
     JOINREP,
     GOSSIP,
+    GOSSIP_TO, 
     DUMMYLASTMSGTYPE
 };
 
