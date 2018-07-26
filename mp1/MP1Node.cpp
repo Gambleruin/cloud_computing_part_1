@@ -4,7 +4,6 @@
  * DESCRIPTION: Membership protocol run by this Node.
  * 				Definition of MP1Node class functions.
  **********************************/
-
 #include "MP1Node.h"
 
 /*
@@ -142,6 +141,11 @@ int MP1Node::initThisNode(Address *joinaddr) {
 	memberNode->heartbeat = 0;
 	memberNode->pingCounter = TFAIL;
 	memberNode->timeOutCounter = -1;
+
+    // mark node failure to be false
+    memberNode->mark_fail =0;                      // whether the node has been marked for fail
+    memberNode->mark_del =0;                       //whether the node has been marked for deletion
+
     initMemberListTable(memberNode);
 
     return 0;
@@ -410,12 +414,10 @@ void MP1Node::nodeLoop() {
 
     // Check my messages
     checkMessages();
-
     // Wait until you're in the group...
     if( !memberNode->inGroup ) {
     	return;
     }
-
     // ...then jump in and share your responsibilites!
     nodeLoopOps();
 
@@ -462,29 +464,60 @@ void MP1Node::nodeloopOps(member *node){
 }
 
 /* This function updates your own hearbeat counter */
-void MP1Node::keepSelfAlive(member* self){
+void MP1Node::keepSelfAlive(member *node){
 
-    self->memberList[0].last_hb++;
-    self->memberList[0].last_local_timestamp = getcurrtime();
-    self->memberList[0].mark_fail = 0;
-    self->memberList[0].mark_del = 0;
+    // node pointing to the first element is itself? 
+    node->memberList[0].last_hb++;
+    node->memberList[0].last_local_timestamp = getcurrtime();
+    node->memberList[0].mark_fail = 0;
+    node->memberList[0].mark_del = 0;
 }
 
-void MP1Node::sendGossip(){
-        //GOSSIP PROTOCOL: pick a random member to send the member list to
-        int randomIndex = rand() % (memberNode->memberList.size() - 1) + 1;
-        MemberListEntry &entry = memberNode->memberList[randomIndex];
+void MP1Node::sendGossip(member* node){
 
-        //check if that node has failed before sending member list to it
-        if (par->getcurrtime() - entry.timestamp > TFAIL) {
-            return;
-        }
+    // the original version
+    // no gossip needed
+    if(node->numMemberEntries==1) 
 
-        //send member list
-        Address toAddr;
-        memcpy(&toAddr.addr[0], &entry.id, sizeof(int));
-        memcpy(&toAddr.addr[4], &entry.port, sizeof(short));
-        this->sendMembershipList(&toAddr, HEARTBEATREQ);
+        return; 
+
+    //choose a candidate
+    int maxtries = 3;
+    int randnode;
+    while(maxtries--){
+        randnode = 1+rand()%(self->numMemberEntries-1);
+        if(self->memberList[randnode].mark_fail==1) 
+            continue;
+        else break;
+    }
+
+    MemberListEntry &entry = memberNode->memberList[randnode];
+    //check if that node has failed before sending member list to it
+    if (par->getcurrtime() - entry.timestamp > TFAIL) {
+        return;
+    }
+
+    //send message
+    //????
+
+    char debug_buffer[50];
+    print_address(debug_buffer,&self->memberList[randnode].addr);
+    //LOG(&self->addr,"Sending a GOSSIP message to %s",debug_buffer);
+    address* send_addr = &self->memberList[randnode].addr;
+    size_t messagesize = sizeof(messagehdr) + sizeof(address) + sizeof(int) + sizeof(MemberEntry)*self->numMemberEntries;
+    char* msg = malloc(messagesize);
+    ((messagehdr*)msg)->msgtype = GOSSIP;
+    memcpy(msg+sizeof(messagehdr),&self->addr,sizeof(address));
+    serializeMemberTable(self,msg+sizeof(messagehdr)+sizeof(address));
+    MPp2psend(&self->addr,send_addr, (char *)msg, messagesize);
+    free(msg);
+
+    /*
+    Address toAddr;
+    memcpy(&toAddr.addr[0], &entry.id, sizeof(int));
+    memcpy(&toAddr.addr[4], &entry.port, sizeof(short));
+    this->sendMembershipList(&toAddr, HEARTBEATREQ);
+    */
     return;
 }
 

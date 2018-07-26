@@ -84,7 +84,6 @@ Application::~Application() {
 
 /**
  * FUNCTION NAME: run
- *
  * DESCRIPTION: Main driver function of the Application layer
  */
 int Application::run()
