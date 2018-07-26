@@ -147,10 +147,21 @@ int MP1Node::initThisNode(Address *joinaddr) {
     memberNode->mark_del =0;                       //whether the node has been marked for deletion
 
     initMemberListTable(memberNode);
-
     return 0;
 }
 
+/**
+ * FUNCTION NAME: initMemberListTable
+ *
+ * DESCRIPTION: Initialize the membership list
+ */
+void MP1Node::initMemberListTable(Member *memberNode) {
+    memberNode->memberList.clear();
+    // 1) invoke the deconstrutor for every MemberListEntry
+    // 2) size == 0 (the vector contained the actual objects).
+}
+
+// later to be used
 int MP1Node::getIdFromAddress(string address) {
     size_t pos = address.find(":");
     int id = stoi(address.substr(0, pos));
@@ -182,6 +193,7 @@ int MP1Node::introduceSelfToGroup(Address *joinaddr) {
         memberNode->inGroup = true;
     }
     else {
+        /*
         size_t msgsize = sizeof(MessageHdr) + sizeof(joinaddr->addr) + sizeof(long) + 1;
         msg = (MessageHdr *) malloc(msgsize * sizeof(char));
 
@@ -189,6 +201,11 @@ int MP1Node::introduceSelfToGroup(Address *joinaddr) {
         msg->msgType = JOINREQ;
         memcpy((char *)(msg+1), &memberNode->addr.addr, sizeof(memberNode->addr.addr));
         memcpy((char *)(msg+1) + 1 + sizeof(memberNode->addr.addr), &memberNode->heartbeat, sizeof(long));
+        */
+
+        size_t msgsize = sizeof(messagehdr) + sizeof(address) + sizeof(int)+ sizeof(MemberEntry)*(node->numMemberEntries);
+        msg=malloc(msgsize);
+        createJoinReq(node,msg);
 
 #ifdef DEBUGLOG
         sprintf(s, "Trying to join...");
@@ -204,7 +221,6 @@ int MP1Node::introduceSelfToGroup(Address *joinaddr) {
 
 }
 
-
 /**
  * FUNCTION NAME: isNullAddress
  *
@@ -217,7 +233,7 @@ int MP1Node::isNullAddress(Address *addr) {
 /**
  * FUNCTION NAME: getJoinAddress
  *
- * DESCRIPTION: Returns the Address of the coordinator
+ * DESCRIPTION: Returns the Address of the coordinator (what does this coodinator mean exactly)
  */
 Address MP1Node::getJoinAddress() {
     Address joinaddr;
@@ -229,13 +245,18 @@ Address MP1Node::getJoinAddress() {
     return joinaddr;
 }
 
-/**
- * FUNCTION NAME: initMemberListTable
- *
- * DESCRIPTION: Initialize the membership list
- */
-void MP1Node::initMemberListTable(Member *memberNode) {
-    memberNode->memberList.clear();
+/* This function copies a serialized repn of the memberlist into the 
+   buffer pointed to by buffer*/
+void MP1Node::serializeMemberTable(member* self, char* buffer){
+    memcpy(buffer,&self->numMemberEntries,sizeof(int)); 
+    memcpy(buffer+sizeof(int),self->memberList,sizeof(MemberEntry)*self->numMemberEntries);     
+}
+
+/* create JOINREQ message: format of data is msghdr|myaddr|listlen|list */
+void MP1Node::createJoinReq(member* self, char*buffer){
+    ((messagehdr*)buffer)->msgtype=JOINREQ;
+    memcpy(buffer+sizeof(messagehdr), &self->addr, sizeof(address));
+    serializeMemberTable(self,buffer+sizeof(address)+sizeof(messagehdr));
 }
 
 /**
@@ -248,14 +269,13 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
      * where does this MessageHdr come from? data stands for the message
      */
 
-    //prelimilary step
+    //check message size
     if(size < (int)sizeof(MessageHdr)) {
 
 #ifdef DEBUGLOG
         log->LOG(&memberNode->addr, "Message received with size less than MessageHdr. Ignored.");
 #endif
         return false;
-
     }
 
     MessageHdr* messageHdr = (MessageHdr*) data;
@@ -272,32 +292,46 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
         */
             cout << "start joinReqHandler..." << endl;
 
+            //this->memberNode is node that is receving request
             if (this->memberNode->inited && 
                 !this->memberNode->bFailed) {
-
-                //at the first step, would the heartbeat has to be increased?
-
                 /*
                  getting the requester information
                  message structure ---> MsgType, address, number of members, member data (id, port, heartbeat)
                 */
-                Address requesterAddress;
-                memcpy(requesterAddress.addr, data, sizeof(memberNode->addr.addr));     //extract requester's Address from data
+                member *self = (member*) env; //own address
+            /*
+                Address req_addr;
+                memcpy(req_addr.addr, data, sizeof(memberNode->addr.addr));     //extract requester's Address from data
+            */
+                Address* req_addr = (address*)data; //extract address of the requesting node
+
+                //???
                 data += sizeof(memberNode->addr.addr);
                 size -= sizeof(memberNode->addr.addr);
 
                 long heartbeat;
-                memcpy(&heartbeat, data, sizeof(long));   //extract heartbeat from data
+                memcpy(&heartbeat, data, sizeof(long));   //extract heartbeat from data (this is not needed anymore)
 
+                // extra methods
                 string reqAddStr = (requesterAddress.getAddress());
                 int id = getIdFromAddress(reqAddStr);
                 short port = getPortFromAddress(reqAddStr);
 
+                /* data now corresponds to the actual content of the message */
+                /* add the node to the local table. */
+                updateNodeTable(self,req_addr,data,size);
+
+                // responds back with a current copy of the membership table. (updated membership table displays of any updated heartbeats)
+                sendBackResponse(req_addr, JOINREP);
+
+/*
                 //update the member in the membership list
                 updateMembershipList(id, port, heartbeat);
 
                 //send membership list to requester
                 sendMembershipList(&requesterAddress, JOINREP);
+*/
 
                 cout << "...end joinReqHandler." << endl;
             return true;
@@ -756,40 +790,6 @@ bool MP1Node::recvMembershipList(void *env, char *data, int size, const char * l
     }
 
     return true;
-}
-
-// where should this function be? 
-/*
-
-    Takes in a serialized repn of the member list coming from node n and 
-    parses it to update your own table, also update the entry of the resp_addr
-
-*/
-void MP1Node::updateMembershipList(int id, short port, long heartbeat){
-    cout << "updating membership list ..." << endl;
-
-    int sizeOfMemberList = this->memberNode->memberList.size();
-    for (int i = 0; i < sizeOfMemberList; i++) {
-        if (memberNode->memberList[i].id == id && memberNode->memberList[i].port == port) {
-            if (heartbeat > memberNode->memberList[i].getheartbeat()) {
-                memberNode->memberList[i].heartbeat = heartbeat;
-                memberNode->memberList[i].settimestamp(par->getcurrtime());
-            }
-            return;
-        }
-    }
-
-    //if the memberlist does not contain the entry, create a new one and push it into the list
-    MemberListEntry entry(id, port, heartbeat, par->getcurrtime());
-    memberNode->memberList.push_back(entry);
-
-#ifdef DEBUGLOG
-    Address logAddr;
-    memcpy(&logAddr.addr[0], &entry.id, sizeof(int));
-    memcpy(&logAddr.addr[4], &entry.port, sizeof(short));
-    log->logNodeAdd(&memberNode->addr, &logAddr);
-#endif
-
 }
 
 /**
