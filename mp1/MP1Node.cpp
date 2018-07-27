@@ -323,17 +323,18 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
                 updateNodeTable(self,req_addr,data,size);
 
                 // responds back with a current copy of the membership table. (updated membership table displays of any updated heartbeats)
-                sendBackResponse(req_addr, JOINREP);
+                /* build your response ( your copy of the membership table */
+                size_t msgsize = sizeof(messagehdr)+sizeof(address)+sizeof(int)+sizeof(MemberEntry)*(self->numMemberEntries);
+                char * msg = malloc(msgsize);
+                ((messagehdr*) msg)->msgtype = JOINREP;
+                memcpy(msg+sizeof(messagehdr),&self->addr,sizeof(address));
+                // write join notification
+                serializeMemberTable(self,msg+sizeof(messagehdr)+sizeof(address));
 
-/*
-                //update the member in the membership list
-                updateMembershipList(id, port, heartbeat);
-
-                //send membership list to requester
-                sendMembershipList(&requesterAddress, JOINREP);
-*/
-
-                cout << "...end joinReqHandler." << endl;
+                /* send your respose */
+                MPp2psend(&self->addr,req_addr,(char*)msg,msgsize);
+                free(msg);
+    
             return true;
             }
 
@@ -343,11 +344,10 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
         add the entries to your own list */
             cout << "start joinRepHandler..." << endl;
 
-            // since this is reply
             if (size < (int)(sizeof(memberNode->addr.addr))) {
                 return false;
             }
-
+/*
             Address replierAddr;
             memcpy(replierAddr.addr, data, sizeof(memberNode->addr.addr));          //extract replier's Address from data
             data += sizeof(memberNode->addr.addr);
@@ -356,74 +356,50 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
             if (!recvMembershipList(env, data, size, "JOINREP")) {
                 return false;
             }
-            //???
-            this->memberNode->inGroup = true;
+*/
+            char addr_str[20];
+            member *self = (member*) env;
+            address* resp_addr = (address*)data;
+            data = (char*)(resp_addr+1); 
+            size -= sizeof(address);
+            
+            self->ingroup =true;
+            //this->memberNode->inGroup = true;
             return true;
 
-        //it seems only use pull protocal
+        //process gossip message
         case(GOSSIP):
-        //???
-            cout << "start Gossip..." << endl;
+        
+            cout << "start to process Gossip... on receving" << endl;
 
             if (size < (int)(sizeof(memberNode->addr.addr))) {
                 return false;
             }
 
-            Address replierAddr;
-            memcpy(&replierAddr.addr, data, sizeof(memberNode->addr.addr));
+            char addr_str[20];
+            member *self = (member*) env;
+            address* resp_addr = (address*)data;
+            data = (char*)(resp_addr+1); 
+            size -= sizeof(address);
+            print_address(addr_str,resp_addr);
+    
+            LOG(&self->addr,"Received a GOSSIP message from %s",addr_str);
 
-            int id = getIdFromAddress(replierAddr.getAddress());
-            short port = getPortFromAddress(replierAddr.getAddress());
-
-            for (vector<MemberListEntry>::iterator entry = memberNode->memberList.begin(); entry != memberNode->memberList.end(); entry++) {
-                if (entry->id == id && entry->port == port) {
-                    entry->settimestamp( par->getcurrtime() );
-                    entry->heartbeat = entry->heartbeat + 1;
-                    return true;
-                }
+            /* data now points to the actual message contents */
+            if(size>0) 
+                updateNodeTable(self,resp_addr,data,size);
+            else{
+                LOG(&self->addr,"Join response is empty!");
             }
-
-            cout << "...end heartbeatRepHandler." << endl;
-            //???
-            return true;
-
-        case(GOSSIP_TO):
-            /**
-                * FUNCTION NAME: heartbeatRepHandler
-                *
-                * DESCRIPTION: Handler for HEARTBEATREP messages. When a HEARTBEATREP message is received from a replier,
-                * increase the replier's heartbeat number in own membership list.
-            */
-            cout << "start heartbeatRepHandler..." << endl;
-            if (size < (int)(sizeof(memberNode->addr.addr))) {
-                return false;
-            }
-
-            Address replierAddr;
-            memcpy(&replierAddr.addr, data, sizeof(memberNode->addr.addr));
-
-            int id = getIdFromAddress(replierAddr.getAddress());
-            short port = getPortFromAddress(replierAddr.getAddress());
-
-            for (vector<MemberListEntry>::iterator entry = memberNode->memberList.begin(); entry != memberNode->memberList.end(); entry++) {
-                if (entry->id == id && entry->port == port) {
-                    entry->settimestamp( par->getcurrtime() );
-                    entry->heartbeat = entry->heartbeat + 1;
-                    return true;
-                }
-            }
-
-            cout << "...end heartbeatRepHandler." << endl;
-            return false;
+            //what should be returned
+            return;
 
         case(DUMMYLASTMSGTYPE): 
             break;
-
+            
         default: 
-            return(false);
-
+            return false;      
     }
-    return true;
 }
 
 /**
@@ -512,7 +488,6 @@ void MP1Node::sendGossip(member* node){
     // the original version
     // no gossip needed
     if(node->numMemberEntries==1) 
-
         return; 
 
     //choose a candidate
@@ -675,122 +650,6 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
         }
 
 */
-
-/**
- * FUNCTION NAME: sendMembershipList
- *
- * DESCRIPTION: send a membership list to a node
- */
-void MP1Node::sendMembershipList(Address *to, enum MsgTypes msgType) {
-    cout << "start sendMembershipList ..." << endl;
-
-    long numberOfMembers = this->memberNode->memberList.size();
-    //given the message structure: [MessageHdr] [Address] [Number of members] [Members...]
-    size_t msgsize = sizeof(MessageHdr) + sizeof(memberNode->addr.addr) + sizeof(long) + (numberOfMembers * (sizeof(int) + sizeof(short) + sizeof(log)));
-
-        //malloc memory space for the header
-    MessageHdr* msg = (MessageHdr *) malloc(msgsize * sizeof(char));
-
-    //msg will be a pointer to an address
-    char* data = (char*) (msg + 1);
-
-    //set the message type
-    msg->msgType = msgType;
-
-    //set this node's address into the message
-    memcpy(data, &memberNode->addr.addr, sizeof(memberNode->addr.addr));
-    data += sizeof(memberNode->addr.addr);
-
-    //set the number of members (for now)
-    char* numberOfMembersPtr = data;
-    memcpy(numberOfMembersPtr, &numberOfMembers, sizeof(long));
-    data += sizeof(long);
-
-    //set the members in list and delete members that have failed
-    for (vector<MemberListEntry>::iterator entry = memberNode->memberList.begin(); entry != memberNode->memberList.end();) {
-        if (entry != memberNode->memberList.begin()) {
-            if (par->getcurrtime() - entry->timestamp > TREMOVE) {
-#ifdef DEBUGLOG
-                Address toAddr;
-                memcpy(&toAddr.addr[0], &entry->id, sizeof(int));
-                memcpy(&toAddr.addr[4], &entry->port, sizeof(short));
-                log->logNodeRemove(&memberNode->addr, &toAddr);
-#endif
-                entry = memberNode->memberList.erase(entry);
-                numberOfMembers--;
-                continue;
-            }
-            //dont copy the failed not into the data
-            if (par->getcurrtime() - entry->timestamp > TFAIL) {
-                numberOfMembers--;
-                ++entry;
-                continue;
-            }
-        }
-
-        memcpy(data, &entry->id, sizeof(int));
-        data += sizeof(int);
-        memcpy(data, &entry->port, sizeof(short));
-        data += sizeof(short);
-        memcpy(data, &entry->heartbeat, sizeof(long));
-        data += sizeof(long);
-
-        ++entry;
-    }
-
-    //set new number of members members were deleted
-    memcpy(numberOfMembersPtr, &numberOfMembers, sizeof(long));
-
-    //read new message size in case members were deleted
-    msgsize = sizeof(MessageHdr) + sizeof(memberNode->addr.addr) + sizeof(long) + (numberOfMembers * (sizeof(int) + sizeof(short) + sizeof(log)));
-
-    //send membership list through network
-    emulNet->ENsend(&memberNode->addr, to, (char *)msg, msgsize);   //send the membership list to network
-    free(msg);
-
-}
-
-/**
- * FUNCTION NAME: recvMembershipList
- *
- * DESCRIPTION: receive a membership list from another node. Make necessary updates to own membership list.
- */
-bool MP1Node::recvMembershipList(void *env, char *data, int size, const char * label) {
-
-    //get the number of members
-    long numberOfMembers;
-
-    //???
-    memcpy(&numberOfMembers, data, sizeof(long));
-    data += sizeof(long);
-    size -= sizeof(long);
-
-    //sanity check (log is in log class)
-    if (size < (int)(numberOfMembers * (sizeof(int) + sizeof(short) + sizeof(log)))) {
-        return false;
-    }
-
-    //extract each member from data and update own membership list
-    MemberListEntry entry;
-    for (int i = 0; i < numberOfMembers; i++) {
-
-        memcpy(&entry.id, data, sizeof(int));
-        data += sizeof(int);
-        memcpy(&entry.port, data, sizeof(short));
-        data += sizeof(short);
-        memcpy(&entry.heartbeat, data, sizeof(long));
-        data += sizeof(long);
-        entry.timestamp = par->getcurrtime();
-
-        int id = entry.id;
-        short port = entry.port;
-        long heartbeat = entry.heartbeat;
-
-        updateMembershipList(id, port, heartbeat);
-    }
-
-    return true;
-}
 
 /**
  * FUNCTION NAME: printAddress
