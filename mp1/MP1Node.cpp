@@ -6,45 +6,6 @@
  **********************************/
 #include "MP1Node.h"
 
-/*
- * Note: You can change/add any functions in MP1Node.{h,cpp}
- */
-void MP1Node::printMessage(string callr_fn, Address *sendr, Address *recvr, 
-                            MessageHdr *msg, int size)
-{
-    MsgTypes msgType;
-    //char *msg_chr;
-    
-    cout << "<bbi>[" << this->par->getcurrtime() << "]in " << callr_fn << " of MP1Node:" << this->memberNode->addr.getAddress();
-    memcpy(&msgType, msg, sizeof(MsgTypes));
-    //msg_chr = (char *)msg;
-    
-    switch(msgType) {
-        case(JOINREQ): 
-            cout << " JOINREQ"; 
-            break;
-  
-        case(JOINREP): 
-            cout << " JOINREP"; 
-            break;
-
-        case(MMBRTBL): 
-            cout << " MMBRTBL"; 
-            break;
-
-        case(DUMMYLASTMSGTYPE): 
-            cout << "DUMMYLASTMSGTYPE" << " "; 
-            break;
-        
-        default: 
-            cout << "UNKNOWN";
-
-    }
-    cout << " from=" << sendr->getAddress();
-    cout << " to=" << recvr->getAddress();
-    cout << endl;
-}
-
 /**
  * Overloaded Constructor of the MP1Node class
  * You can add new members to the class if you think it
@@ -265,16 +226,10 @@ void MP1Node::createJoinReq(member* self, char*buffer){
  * DESCRIPTION: Message handler for different message types
  */
 bool MP1Node::recvCallBack(void *env, char *data, int size ) {
-    /*
-     * where does this MessageHdr come from? data stands for the message
-     */
 
     //check message size
     if(size < (int)sizeof(MessageHdr)) {
-
-#ifdef DEBUGLOG
         log->LOG(&memberNode->addr, "Message received with size less than MessageHdr. Ignored.");
-#endif
         return false;
     }
 
@@ -306,12 +261,13 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
             */
                 Address* req_addr = (address*)data; //extract address of the requesting node
 
-                //???
                 data += sizeof(memberNode->addr.addr);
                 size -= sizeof(memberNode->addr.addr);
-
+/*
                 long heartbeat;
                 memcpy(&heartbeat, data, sizeof(long));   //extract heartbeat from data (this is not needed anymore)
+*/
+
 
                 // extra methods
                 string reqAddStr = (requesterAddress.getAddress());
@@ -328,6 +284,7 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
                 char * msg = malloc(msgsize);
                 ((messagehdr*) msg)->msgtype = JOINREP;
                 memcpy(msg+sizeof(messagehdr),&self->addr,sizeof(address));
+
                 // write join notification
                 serializeMemberTable(self,msg+sizeof(messagehdr)+sizeof(address));
 
@@ -347,21 +304,12 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
             if (size < (int)(sizeof(memberNode->addr.addr))) {
                 return false;
             }
-/*
-            Address replierAddr;
-            memcpy(replierAddr.addr, data, sizeof(memberNode->addr.addr));          //extract replier's Address from data
-            data += sizeof(memberNode->addr.addr);
-            size -= sizeof(memberNode->addr.addr);
 
-            if (!recvMembershipList(env, data, size, "JOINREP")) {
-                return false;
-            }
-*/
-            char addr_str[20];
+            //char addr_str[20];
             member *self = (member*) env;
-            address* resp_addr = (address*)data;
-            data = (char*)(resp_addr+1); 
-            size -= sizeof(address);
+            //address* resp_addr = (address*)data;
+            //data = (char*)(resp_addr+1); 
+            //size -= sizeof(address);
             
             self->ingroup =true;
             //this->memberNode->inGroup = true;
@@ -381,7 +329,6 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
             address* resp_addr = (address*)data;
             data = (char*)(resp_addr+1); 
             size -= sizeof(address);
-            print_address(addr_str,resp_addr);
     
             LOG(&self->addr,"Received a GOSSIP message from %s",addr_str);
 
@@ -476,7 +423,8 @@ void MP1Node::nodeloopOps(member *node){
 /* This function updates your own hearbeat counter */
 void MP1Node::keepSelfAlive(member *node){
 
-    // node pointing to the first element is itself? 
+    // node pointing to the first element is itself?
+    // modify the property  
     node->memberList[0].last_hb++;
     node->memberList[0].last_local_timestamp = getcurrtime();
     node->memberList[0].mark_fail = 0;
@@ -510,7 +458,7 @@ void MP1Node::sendGossip(member* node){
     //????
 
     char debug_buffer[50];
-    print_address(debug_buffer,&self->memberList[randnode].addr);
+    //print_address(debug_buffer,&self->memberList[randnode].addr);
     //LOG(&self->addr,"Sending a GOSSIP message to %s",debug_buffer);
     address* send_addr = &self->memberList[randnode].addr;
     size_t messagesize = sizeof(messagehdr) + sizeof(address) + sizeof(int) + sizeof(MemberEntry)*self->numMemberEntries;
@@ -520,13 +468,6 @@ void MP1Node::sendGossip(member* node){
     serializeMemberTable(self,msg+sizeof(messagehdr)+sizeof(address));
     MPp2psend(&self->addr,send_addr, (char *)msg, messagesize);
     free(msg);
-
-    /*
-    Address toAddr;
-    memcpy(&toAddr.addr[0], &entry.id, sizeof(int));
-    memcpy(&toAddr.addr[4], &entry.port, sizeof(short));
-    this->sendMembershipList(&toAddr, HEARTBEATREQ);
-    */
     return;
 }
 
@@ -582,24 +523,24 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
         int updateMade = 0;
         
         /* ignore this entry if this entry is not reliable */
+        /* the mark_fail can be replaced by bfailed */
         if(otherList[j].mark_fail) 
             continue;
 
         /* iterate over my list */
         for(i=1;i<self->numMemberEntries;++i){
             if( memcmp(&otherList[j].addr,&self->memberList[i].addr,sizeof(address))==0) {
-                updateMade = 1;
-                /* DOUBT: if the process has been marked as failed locally and we still have a good entry from that process,
-                   then can i mark this process as alive ? For now , I am doing so */   
+                updateMade = 1;  
   
-                if(self->memberList[i].last_hb>=otherList[j].last_hb) break; //no need to update
+                if(self->memberList[i].last_hb>=otherList[j].last_hb) 
+                    break; //no need to update
                 else{
                     if(!self->memberList[i].mark_fail){
                         //update the heartbeat of the process and add a local timestamp
                         int64_t oldhb=self->memberList[i].last_hb;
                         self->memberList[i].last_hb = otherList[j].last_hb;
                         self->memberList[i].last_local_timestamp = getcurrtime();   
-                        print_address(debug_buffer, &self->memberList[i].addr);
+                        //print_address(debug_buffer, &self->memberList[i].addr);
 
                         //LOG(&self->addr,"\t\tUpdated the entry for %s with hb_new %d vs %d hb_old\n",debug_buffer,self->memberList[i].last_hb,oldhb);        
                     }else{
@@ -608,7 +549,7 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
                         self->memberList[i].last_local_timestamp = getcurrtime();   
                         self->memberList[i].mark_fail=0; //reverse your decision as you got a greater hb
                         printf("reverse your decision as you got a greater hb");
-                        print_address(debug_buffer, &self->memberList[i].addr);
+                        //print_address(debug_buffer, &self->memberList[i].addr);
                         //LOG(&self->addr,"\t\tReviving the node at %s with hb_new %d vs  %d hb_old\n",debug_buffer,self->memberList[i].last_hb,oldhb);
                     }
                 }
@@ -620,7 +561,7 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
             if(self->numMemberEntries<MAX_NNB){ 
                 self->memberList[self->numMemberEntries] = otherList[j];
                 self->memberList[self->numMemberEntries].last_local_timestamp = getcurrtime(); //stamp it with a local timestamp
-                print_address(debug_buffer,&self->memberList[self->numMemberEntries].addr);
+                //print_address(debug_buffer,&self->memberList[self->numMemberEntries].addr);
                 //LOG(&self->addr,"\t\tAdded the entry for %s with hb %d",debug_buffer,self->memberList[self->numMemberEntries].last_hb);        
                 self->numMemberEntries++;
 #ifdef DEBUGLOG
