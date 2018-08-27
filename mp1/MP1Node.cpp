@@ -100,12 +100,10 @@ int MP1Node::initThisNode(Address *joinaddr) {
     // node is up!
 	memberNode->nnb = 0;
 	memberNode->heartbeat = 0;
+
+    // this is the threshold to which node can be deleted due to its inactive state 
 	memberNode->pingCounter = TFAIL;
 	memberNode->timeOutCounter = -1;
-
-    // mark node failure to be false
-    memberNode->mark_fail =0;                      // whether the node has been marked for fail
-    memberNode->mark_del =0;                       //whether the node has been marked for deletion
 
     initMemberListTable(memberNode);
     return 0;
@@ -122,7 +120,7 @@ void MP1Node::initMemberListTable(Member *memberNode) {
     // 2) size == 0 (the vector contained the actual objects).
 }
 
-// later to be used
+// later to be used (where)
 int MP1Node::getIdFromAddress(string address) {
     size_t pos = address.find(":");
     int id = stoi(address.substr(0, pos));
@@ -194,7 +192,7 @@ int MP1Node::isNullAddress(Address *addr) {
 /**
  * FUNCTION NAME: getJoinAddress
  *
- * DESCRIPTION: Returns the Address of the coordinator (what does this coodinator mean exactly)
+ * DESCRIPTION: Returns the Address of the coordinator 
  */
 Address MP1Node::getJoinAddress() {
     Address joinaddr;
@@ -267,18 +265,10 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
                 long heartbeat;
                 memcpy(&heartbeat, data, sizeof(long));   //extract heartbeat from data (this is not needed anymore)
 */
-
-
-                // extra methods
-                string reqAddStr = (requesterAddress.getAddress());
-                int id = getIdFromAddress(reqAddStr);
-                short port = getPortFromAddress(reqAddStr);
-
                 /* data now corresponds to the actual content of the message */
                 /* add the node to the local table. */
                 updateNodeTable(self,req_addr,data,size);
 
-                // responds back with a current copy of the membership table. (updated membership table displays of any updated heartbeats)
                 /* build your response ( your copy of the membership table */
                 size_t msgsize = sizeof(messagehdr)+sizeof(address)+sizeof(int)+sizeof(MemberEntry)*(self->numMemberEntries);
                 char * msg = malloc(msgsize);
@@ -305,14 +295,8 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
                 return false;
             }
 
-            //char addr_str[20];
-            member *self = (member*) env;
-            //address* resp_addr = (address*)data;
-            //data = (char*)(resp_addr+1); 
-            //size -= sizeof(address);
-            
-            self->ingroup =true;
-            //this->memberNode->inGroup = true;
+            member *self = (member*) env;           
+            self->inGroup =true;
             return true;
 
         //process gossip message
@@ -377,7 +361,6 @@ void MP1Node::nodeLoop() {
     }
     // ...then jump in and share your responsibilites!
     nodeLoopOps();
-
     return;
 }
 
@@ -427,14 +410,13 @@ void MP1Node::keepSelfAlive(member *node){
     // modify the property  
     node->memberList[0].last_hb++;
     node->memberList[0].last_local_timestamp = getcurrtime();
+    /* NOOO
     node->memberList[0].mark_fail = 0;
     node->memberList[0].mark_del = 0;
+    */ 
 }
 
 void MP1Node::sendGossip(member* node){
-
-    // the original version
-    // no gossip needed
     if(node->numMemberEntries==1) 
         return; 
 
@@ -443,7 +425,7 @@ void MP1Node::sendGossip(member* node){
     int randnode;
     while(maxtries--){
         randnode = 1+rand()%(self->numMemberEntries-1);
-        if(self->memberList[randnode].mark_fail==1) 
+        if(self->memberList[randnode].bfail==1) 
             continue;
         else break;
     }
@@ -454,48 +436,60 @@ void MP1Node::sendGossip(member* node){
         return;
     }
 
-    //send message
-    //????
-
+    // is the gossip message size can not exceed 50 
     char debug_buffer[50];
-    //print_address(debug_buffer,&self->memberList[randnode].addr);
-    //LOG(&self->addr,"Sending a GOSSIP message to %s",debug_buffer);
+
+    //specify the message sending type
     address* send_addr = &self->memberList[randnode].addr;
     size_t messagesize = sizeof(messagehdr) + sizeof(address) + sizeof(int) + sizeof(MemberEntry)*self->numMemberEntries;
     char* msg = malloc(messagesize);
     ((messagehdr*)msg)->msgtype = GOSSIP;
-    memcpy(msg+sizeof(messagehdr),&self->addr,sizeof(address));
+
+    //memcpy(msg+sizeof(messagehdr),&self->addr,sizeof(address));
     serializeMemberTable(self,msg+sizeof(messagehdr)+sizeof(address));
+    // sending the membership list
     MPp2psend(&self->addr,send_addr, (char *)msg, messagesize);
+
     free(msg);
     return;
 }
 
+/////////////******************this is where to debug****************///////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* This function checks the node table at a particular node and 
    marks up any deleted or failed entries */
 void MP1Node::checkNodeTable(member* self){
-    int i;
-    char debug_buffer[50];
-    for(i=1;i<self->numMemberEntries;++i){
+    //check Assignment operator overloading in member.cpp
+    for(int i=1;i<self->numMemberEntries;++i){
 
-        if( !self->memberList[i].mark_fail ){ 
-            if( (getcurrtime()-self->memberList[i].last_local_timestamp ) > self->tfail){
+        if( !self->memberList[i].bfail ){ 
+            if( (getcurrtime()-self->memberList[i].timeOutCounter ) > self->TFAIL){
             /* tfail timer has expired , mark node as failed */
-                int64_t oldts = self->memberList[i].last_local_timestamp;
-                self->memberList[i].mark_fail=1;
-                self->memberList[i].last_local_timestamp = getcurrtime();
-                print_address(debug_buffer,&self->memberList[i].addr);
-                LOG(&self->addr,"\t\tMarking node %s as Failed on %d , entry last updated at %d",debug_buffer,getcurrtime(),oldts);
+                int64_t oldts = self->memberList[i].timeOutCounter;
+                self->memberList[i].bfail=1;
+                self->memberList[i].timeOutCounter = getcurrtime();
             }
         }else{
-            /* tdelete timer has expired, mark node for deletion */
-            if( (getcurrtime()-self->memberList[i].last_local_timestamp ) > self->tdelete){
+            /* timeOutCounter vs last_local_timestamp ,wouldnt TFAIL be a constant */
+            if( (getcurrtime()-self->memberList[i].timeOutCounter ) > self->TREMOVE ){
                 //swap it with the last member in the list to delete it.
-                int64_t oldts = self->memberList[i].last_local_timestamp;
+                int64_t oldts = self->memberList[i].timeOutCounter;
                 logNodeRemove(&self->addr,&self->memberList[i].addr); 
-                print_address(debug_buffer,&self->memberList[i].addr);
 
-                LOG(&self->addr,"\t\tMarking node %s as Deleted on %d , entry last updated at %d",debug_buffer,getcurrtime(),oldts);
                 self->memberList[i] = self->memberList[self->numMemberEntries-1];
                 self->numMemberEntries--;
             }
@@ -505,26 +499,29 @@ void MP1Node::checkNodeTable(member* self){
 
 /*
     Takes in a serialized repn of the member list coming from node n and 
-    parses it to update your own table, also update the entry of the resp_addr
+    parses it to update your own table, also update the entry of the resp_addr (where does this entry come from? )
 */
 void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int datasize){
     
     char debug_buffer[100];
     int i,j;
     int* otherListSize = (int*)data;
+
+    // ????
     if((*otherListSize)*sizeof(MemberEntry) < (datasize-sizeof(int))){
         LOG(&self->addr,"Bad Packet");
         return ;
     }
 
-    /*iterate over their list */
+    /*iterate over their list (where does this +1 come from???? )*/
     MemberEntry* otherList = (MemberEntry*)(otherListSize+1);
     for(j=0;j<*otherListSize;++j){
         int updateMade = 0;
         
         /* ignore this entry if this entry is not reliable */
         /* the mark_fail can be replaced by bfailed */
-        if(otherList[j].mark_fail) 
+        /* the node fail? the list fail??? */
+        if(otherList[j].bfail) 
             continue;
 
         /* iterate over my list */
@@ -532,37 +529,35 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
             if( memcmp(&otherList[j].addr,&self->memberList[i].addr,sizeof(address))==0) {
                 updateMade = 1;  
   
-                if(self->memberList[i].last_hb>=otherList[j].last_hb) 
+                if(self->memberList[i].heartbeat>=otherList[j].heartbeat) 
                     break; //no need to update
                 else{
-                    if(!self->memberList[i].mark_fail){
-                        //update the heartbeat of the process and add a local timestamp
-                        int64_t oldhb=self->memberList[i].last_hb;
-                        self->memberList[i].last_hb = otherList[j].last_hb;
-                        self->memberList[i].last_local_timestamp = getcurrtime();   
-                        //print_address(debug_buffer, &self->memberList[i].addr);
-
-                        //LOG(&self->addr,"\t\tUpdated the entry for %s with hb_new %d vs %d hb_old\n",debug_buffer,self->memberList[i].last_hb,oldhb);        
+                    if(!self->memberList[i].bFailed){
+                        // update the heartbeat of the process and add a local timestamp
+                        // this last_hb is the pingcounter as I believe
+                        int64_t oldhb=self->memberList[i].heartbeat;
+                        self->memberList[i].heartbeat = otherList[j].heartbeat;
+                        // ????
+                        self->memberList[i].timestamp = getcurrtime();   
+                     
                     }else{
                         int64_t oldhb=self->memberList[i].last_hb;
                         self->memberList[i].last_hb = otherList[j].last_hb;
                         self->memberList[i].last_local_timestamp = getcurrtime();   
-                        self->memberList[i].mark_fail=0; //reverse your decision as you got a greater hb
-                        printf("reverse your decision as you got a greater hb");
-                        //print_address(debug_buffer, &self->memberList[i].addr);
-                        //LOG(&self->addr,"\t\tReviving the node at %s with hb_new %d vs  %d hb_old\n",debug_buffer,self->memberList[i].last_hb,oldhb);
+                        self->memberList[i].b_fail=0; //reverse your decision as you got a greater hb
+           
                     }
                 }
             }
         }
 
+        //use operator overload of entrymembership list 
         if(!updateMade && memcmp(&otherList[j].addr,&self->memberList[0].addr,sizeof(address))!=0){
             //this is a new node. append it at the end of the list
             if(self->numMemberEntries<MAX_NNB){ 
                 self->memberList[self->numMemberEntries] = otherList[j];
                 self->memberList[self->numMemberEntries].last_local_timestamp = getcurrtime(); //stamp it with a local timestamp
-                //print_address(debug_buffer,&self->memberList[self->numMemberEntries].addr);
-                //LOG(&self->addr,"\t\tAdded the entry for %s with hb %d",debug_buffer,self->memberList[self->numMemberEntries].last_hb);        
+                     
                 self->numMemberEntries++;
 #ifdef DEBUGLOG
                 logNodeAdd(&self->addr,&otherList[j].addr); 
@@ -573,32 +568,3 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
         }
     }    
 } 
-/*
-
-    //completess and accuracy tests fail when this executed of par->getcurrtime() <= 3
-    if (par->getcurrtime() > 3 && memberNode->memberList.size() > 1) {
-
-        //update own node's heartbeat and timestamp
-        int id = getIdFromAddress(memberNode->addr.getAddress());
-        short port = getPortFromAddress(memberNode->addr.getAddress());
-        for (vector<MemberListEntry>::iterator entry = memberNode->memberList.begin();
-             entry != memberNode->memberList.end(); entry++) {
-            if (entry->id == id && entry->port == port) {
-                entry->settimestamp(par->getcurrtime());
-                entry->heartbeat = entry->heartbeat + 1;
-                break;
-            }
-        }
-
-*/
-
-/**
- * FUNCTION NAME: printAddress
- *
- * DESCRIPTION: Print the Address
- */
-void MP1Node::printAddress(Address *addr)
-{
-    printf("%d.%d.%d.%d:%d \n",  addr->addr[0],addr->addr[1],addr->addr[2],
-                                                       addr->addr[3], *(short*)&addr->addr[4]) ;    
-}

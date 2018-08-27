@@ -64,11 +64,9 @@ public:
 
 	int id;
 	short port;
-	long heartbeat;
+	// i dont think the member list entry owns a heartbeat
+	//long heartbeat;
 	long timestamp;
-
-	int mark_fail;                      // whether the node has been marked for fail
-    int mark_del;                       //whether the node has been marked for deletion
 
 	MemberListEntry(int id, short port, long heartbeat, long timestamp);
 	MemberListEntry(int id, short port);

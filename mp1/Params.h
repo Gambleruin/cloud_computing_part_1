@@ -11,6 +11,14 @@
 #include "Params.h"
 #include "Member.h"
 
+/*
+We adopt
+the terminology of the epidemiology literature and call a site with an update it is willing to share
+infective with respect to that update. A site is susceptible if it has not yet received the update;
+and a site is removed if it has received the update but is no longer willing to share the update.
+Anti-entropy is an example of a simple epidemic: one in which sites are always either susceptible
+or infective.
+*/
 enum testTYPE { CREATE_TEST, READ_TEST, UPDATE_TEST, DELETE_TEST };
 
 /**
