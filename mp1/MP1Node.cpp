@@ -404,6 +404,7 @@ void MP1Node::nodeloopOps(member *node){
 }
 
 /* This function updates your own hearbeat counter */
+/* only if you are infective are u allowed to increase heartbeat */
 void MP1Node::keepSelfAlive(member *node){
 
     // node pointing to the first element is itself?
@@ -475,11 +476,12 @@ void MP1Node::sendGossip(member* node){
 void MP1Node::checkNodeTable(member* self){
     //check Assignment operator overloading in member.cpp
     for(int i=1;i<self->numMemberEntries;++i){
-
+        
+        //????
         if( !self->memberList[i].bfail ){ 
-            if( (getcurrtime()-self->memberList[i].timeOutCounter ) > self->TFAIL){
+            if( (getcurrtime()-self->memberList[i].heartbeat ) > self->TFAIL){
             /* tfail timer has expired , mark node as failed */
-                int64_t oldts = self->memberList[i].timeOutCounter;
+                int64_t oldts = self->memberList[i].heartbeat;
                 self->memberList[i].bfail=1;
                 self->memberList[i].timeOutCounter = getcurrtime();
             }
@@ -521,7 +523,7 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
         /* ignore this entry if this entry is not reliable */
         /* the mark_fail can be replaced by bfailed */
         /* the node fail? the list fail??? */
-        if(otherList[j].bfail) 
+        if(otherList[j].bFailed) 
             continue;
 
         /* iterate over my list */
@@ -543,8 +545,8 @@ void MP1Node::updateNodeTable(member* self, address* other_addr,char* data,int d
                     }else{
                         int64_t oldhb=self->memberList[i].last_hb;
                         self->memberList[i].last_hb = otherList[j].last_hb;
-                        self->memberList[i].last_local_timestamp = getcurrtime();   
-                        self->memberList[i].b_fail=0; //reverse your decision as you got a greater hb
+                        self->memberList[i].timestamp = getcurrtime();   
+                        self->memberList[i].bFailed=0; //reverse your decision as you got a greater hb
            
                     }
                 }
